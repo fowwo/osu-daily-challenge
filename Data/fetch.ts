@@ -27,3 +27,12 @@ export async function fetchAPIRooms(token: string, limit?: number) {
 export async function fetchAPIScores(token: string, room: number, playlist: number, cursor_string?: string) {
 	return await fetchAPI(`rooms/${room}/playlist/${playlist}/scores` + (cursor_string ? `?cursor_string=${cursor_string}` : ""), token) as { scores: APIScore[], cursor_string: string | null };
 }
+
+/** Fetches and yields the scores from a daily challenge in batches of 50 and returns the scores as provided by the API. */
+export async function* yieldAPIScores(token: string, room: number, playlist: number, cursor_string?: string | null) {
+	while (cursor_string !== null) {
+		const res = await fetchAPIScores(token, room, playlist, cursor_string);
+		yield res.scores;
+		cursor_string = res.cursor_string;
+	}
+}
