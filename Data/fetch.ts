@@ -1,3 +1,4 @@
+import { reformatRoom, reformatScore } from "./reformat";
 import type { APIRoom } from "./Types/API/Room";
 import type { APIScore } from "./Types/API/Score";
 
@@ -23,6 +24,11 @@ export async function fetchAPIRooms(token: string, limit?: number) {
 	}) as APIRoom[];
 }
 
+/** Fetches the daily challenge rooms and returns only the desired information. */
+export async function fetchRooms(token: string, limit?: number) {
+	return (await fetchAPIRooms(token, limit)).map(room => reformatRoom(room));
+}
+
 /** Fetches the scores from a daily challenge in batches of 50 and returns the scores and cursor string as provided by the API. */
 export async function fetchAPIScores(token: string, room: number, playlist: number, cursor_string?: string) {
 	return await fetchAPI(`rooms/${room}/playlist/${playlist}/scores` + (cursor_string ? `?cursor_string=${cursor_string}` : ""), token) as { scores: APIScore[], cursor_string: string | null };
@@ -34,5 +40,12 @@ export async function* yieldAPIScores(token: string, room: number, playlist: num
 		const res = await fetchAPIScores(token, room, playlist, cursor_string);
 		yield res.scores;
 		cursor_string = res.cursor_string;
+	}
+}
+
+/** Fetches and yields the scores from a daily challenge in batches of 50 and returns only the desired information. */
+export async function* yieldScores(token: string, room: number, playlist: number, cursor_string?: string | null) {
+	for await (const scores of yieldAPIScores(token, room, playlist, cursor_string)) {
+		yield scores.map(score => reformatScore(score));
 	}
 }
