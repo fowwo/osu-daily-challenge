@@ -1,4 +1,5 @@
 import type { APIRoom } from "./Types/API/Room";
+import type { APIScore } from "./Types/API/Score";
 
 /** Fetches from the API with default headers and error handling. */
 export async function fetchAPI(endpoint: string, token: string, init?: RequestInit) {
@@ -20,4 +21,9 @@ export async function fetchAPIRooms(token: string, limit?: number) {
 	return await fetchAPI("rooms?category=daily_challenge&mode=all" + (limit ? `&limit=${limit}` : ""), token, {
 		headers: { "x-api-version": "20240529" }
 	}) as APIRoom[];
+}
+
+/** Fetches the scores from a daily challenge in batches of 50 and returns the scores and cursor string as provided by the API. */
+export async function fetchAPIScores(token: string, room: number, playlist: number, cursor_string?: string) {
+	return await fetchAPI(`rooms/${room}/playlist/${playlist}/scores` + (cursor_string ? `?cursor_string=${cursor_string}` : ""), token) as { scores: APIScore[], cursor_string: string | null };
 }
