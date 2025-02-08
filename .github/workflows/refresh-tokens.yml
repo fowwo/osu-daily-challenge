@@ -1,0 +1,41 @@
+name: Refresh tokens
+
+on:
+  schedule:
+    # Ideally, this workflow would be reused by other workflows that need valid tokens.
+    # When this workflow updates the secrets, the changes are not reflected in the calling workflow.
+    # So, this workflow is instead scheduled and runs every noon.
+    - cron: 0 12 * * * # Noon
+  workflow_dispatch:
+
+jobs:
+  refresh-tokens:
+    name: Refresh tokens
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Refresh tokens
+        env:
+          GH_TOKEN: ${{ secrets.PAT }}
+          CLIENT_ID: ${{ vars.CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+          REFRESH_TOKEN: ${{ secrets.REFRESH_TOKEN }}
+        run: |
+          res=$(curl --silent --request POST "https://osu.ppy.sh/oauth/token" \
+            --header "Accept: application/json" \
+            --header "Content-Type: application/x-www-form-urlencoded" \
+            --data "client_id=$CLIENT_ID&client_secret=$CLIENT_SECRET&grant_type=refresh_token&refresh_token=$REFRESH_TOKEN&scope=public")
+
+          access_token=$(echo "$res" | jq -r ".access_token")
+          refresh_token=$(echo "$res" | jq -r ".refresh_token")
+
+          if [ "$access_token" == "null" ] || [ "$refresh_token" == "null" ]; then
+            echo "Failed to refresh tokens."
+            echo "Response: $res"
+            exit 1
+          fi
+
+          gh secret set ACCESS_TOKEN --body "$access_token"
+          gh secret set REFRESH_TOKEN --body "$refresh_token"
+          echo "Tokens updated successfully."
