@@ -21,11 +21,8 @@ data.users ??= {};
 // Check for missing daily challenges.
 log("Checking for missing daily challenges...");
 const missingRooms = await fetchMissingRooms(ACCESS_TOKEN, Object.values(data.rooms));
-if (missingRooms.length === 0) {
-	console.warn("No missing daily challenges found.");
-	process.exit(0);
-}
 log(missingRooms.length, `missing daily challenge${missingRooms.length === 1 ? "" : "s"} found.`);
+if (missingRooms.length === 0) process.exit(0);
 
 // Save new rooms (with initially empty scores list).
 for (const { room_id, room } of missingRooms) data.rooms[room_id] = room;
@@ -40,13 +37,14 @@ while (true) {
 
 	// Fetch scores until all generators are consumed or rate limit is reached.
 	const remainingGenerators: typeof generators = [];
-	await Promise.all(generators.map(({ room_id, generator }) => new Promise<void>(async (resolve) => {
+	await Promise.all(generators.map(({ room_id, generator }) => new Promise<void>(async resolve => {
 		let done = false;
 		while (remainingCalls) {
 			remainingCalls--;
 			const result = await generator.next();
 			if (done = result.done!) {
 				remainingCalls++; // No API call was made.
+				log(data.rooms[room_id].date, "->", data.rooms[room_id].scores.length, `score${data.rooms[room_id].scores.length === 1 ? "": "s"} fetched.`);
 				break;
 			}
 
@@ -81,7 +79,8 @@ while (true) {
 log("Saving data...");
 writeFileSync("data.json", JSON.stringify(data), "utf8");
 
-log("Done.");
+const scoreCount = missingRooms.reduce((sum, { room }) => sum + room.scores.length, 0);
+log("Done.", `(${missingRooms.length} daily challenge${missingRooms.length === 1 ? "" : "s"}, ${scoreCount} score${scoreCount === 1 ? "" : "s"})`);
 
 /** Appends the current time in HH:MM:SS format to the beginning of the message and prints it. */
 function log(...messages: any[]) { console.log(`[${new Date().toISOString().substring(11, 19)}]`, ...messages); }
