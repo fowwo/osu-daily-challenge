@@ -29,11 +29,10 @@ for (const { room_id, room } of missingRooms) data.rooms[room_id] = room;
 
 // Fetch scores while respecting rate limit.
 log("Fetching scores...");
-const rateLimit = 1200, rateCooldown = 60000; // 1200 calls per minute
+const rateLimit = 1150, rateCooldown = 60000; // Rate limit is 1200 calls per minute. I'm using 1150 calls per minute to be safe.
 let generators = missingRooms.map(({ room_id, playlist_item_id }) => ({ room_id, generator: yieldScores(ACCESS_TOKEN, room_id, playlist_item_id) }));
 while (true) {
-	let remainingCalls = rateLimit, timeout;
-	const cooldown = new Promise((resolve) => timeout = setTimeout(resolve, rateCooldown));
+	let remainingCalls = rateLimit;
 
 	// Fetch scores until all generators are consumed or rate limit is reached.
 	const remainingGenerators: typeof generators = [];
@@ -62,14 +61,11 @@ while (true) {
 	})));
 
 	// No need to wait for cooldown if all generators are consumed.
-	if (remainingGenerators.length === 0) {
-		clearTimeout(timeout);
-		break;
-	}
+	if (remainingGenerators.length === 0) break;
 
 	// Wait for cooldown.
 	log("Rate limit reached. Waiting for 1 minute...");
-	await cooldown;
+	await new Promise(resolve => setTimeout(resolve, rateCooldown));
 
 	log("Fetching more scores...");
 	generators = remainingGenerators;
