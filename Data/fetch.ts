@@ -20,7 +20,7 @@ export async function fetchAPI(endpoint: string, token: string, init?: RequestIn
 
 /** Fetches the daily challenge rooms and returns the result as provided by the API. */
 export async function fetchAPIRooms(token: string, limit?: number) {
-	return await fetchAPI("rooms?category=daily_challenge&mode=all" + (limit ? `&limit=${limit}` : ""), token, {
+	return await fetchAPI("rooms?category=daily_challenge&mode=ended" + (limit ? `&limit=${limit}` : ""), token, {
 		headers: { "x-api-version": "20240529" }
 	}) as APIRoom[];
 }
@@ -64,13 +64,11 @@ export async function* yieldScores(token: string, room: number, playlist: number
 /** Gets the minimum number of rooms to fetch all missing rooms. */
 function getFetchRoomLimit(dates: Set<string>) {
 	const date = new Date("2024-07-25");
-	const now = new Date();
-	now.setUTCMinutes(now.getUTCMinutes() - 5); // Daily challenges start 5 minutes after midnight.
-	const today = new Date(now.toISOString().substring(0, 10));
+	const today = new Date(new Date().toISOString().substring(0, 10));
 
 	while (date <= today) {
 		const isoString = date.toISOString().substring(0, 10);
-		if (!dates.has(isoString)) return (today.valueOf() - date.valueOf()) / 86400000 + 1;
+		if (!dates.has(isoString)) return (today.valueOf() - date.valueOf()) / 86400000;
 		date.setUTCDate(date.getUTCDate() + 1);
 	}
 	return 0;
