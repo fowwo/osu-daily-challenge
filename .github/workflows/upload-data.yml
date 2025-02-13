@@ -1,0 +1,28 @@
+name: Upload data
+
+on:
+  push:
+    branches:
+      - upload
+
+jobs:
+  upload-data:
+    name: Upload data
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: upload
+      - name: Upload data
+        uses: actions/upload-artifact@v4
+        with:
+          name: data
+          path: data.json
+          retention-days: 5
+          compression-level: 9
+      - name: Delete branch
+        run: |
+          curl --silent --request DELETE "https://api.github.com/repos/${{ github.repository }}/git/refs/heads/upload" \
+            --header "Authorization: token ${{ secrets.PAT }}" \
+            --header "Accept: application/vnd.github.v3+json"
