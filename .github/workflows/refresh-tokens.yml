@@ -5,7 +5,7 @@ on:
     # Ideally, this workflow would be reused by other workflows that need valid tokens.
     # When this workflow updates the secrets, the changes are not reflected in the calling workflow.
     # So, this workflow is instead scheduled and runs every noon.
-    - cron: 0 12 * * * # Noon
+    - cron: "0 12 * * *" # Noon
   workflow_dispatch:
 
 jobs:
